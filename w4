@@ -1,0 +1,258 @@
+
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const GalleryApp());
+}
+
+String getCategory(double width) {
+  if (width < 600) return 'Mobile';
+  if (width < 1024) return 'Tablet';
+  return 'Desktop';
+}
+
+class GalleryApp extends StatelessWidget {
+  const GalleryApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: ResponsiveGallery(),
+    );
+  }
+}
+
+class GalleryItem {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+
+  const GalleryItem(
+    this.title,
+    this.description,
+    this.icon,
+    this.color,
+  );
+}
+
+class ResponsiveGallery extends StatelessWidget {
+  const ResponsiveGallery({super.key});
+
+  static const items = [
+    GalleryItem('Learning', 'Explore courses and topics',
+        Icons.school, Colors.deepPurple),
+    GalleryItem('Projects', 'Showcase your work',
+        Icons.code, Colors.teal),
+    GalleryItem('Achievements', 'Celebrate milestones',
+        Icons.emoji_events, Colors.orange),
+    GalleryItem('Community', 'Connect with others',
+        Icons.people, Colors.blue),
+    GalleryItem('Resources', 'Useful study materials',
+        Icons.menu_book, Colors.pink),
+    GalleryItem('Goals', 'Track your progress',
+        Icons.flag, Colors.green),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = MediaQuery.of(context).size;
+    final category = getCategory(screen.width);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Responsive Gallery'),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+
+          return Column(
+            children: [
+              Expanded(
+                child: OrientationBuilder(
+                  builder: (context, orientation) {
+                    final portrait =
+                        orientation == Orientation.portrait;
+
+                    if (width < 600) {
+                      // Mobile portrait: vertical list.
+                      // Mobile landscape: horizontal scrolling.
+                      return portrait
+                          ? _buildMobileLayout()
+                          : _buildMobileLandscape();
+                    }
+
+                    if (width < 1024) {
+                      return _buildTabletLayout(portrait);
+                    }
+
+                    return _buildDesktopLayout();
+                  },
+                ),
+              ),
+
+              // Live debugging footer
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                color: Colors.deepPurple.shade50,
+                child: Text(
+                  '$category | '
+                  'Width: ${screen.width.toStringAsFixed(0)} px | '
+                  '${MediaQuery.of(context).orientation == Orientation.portrait ? "Portrait" : "Landscape"}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      drawer: screen.width >= 1024
+          ? null
+          : Drawer(
+              child: ListView(
+                children: const [
+                  DrawerHeader(
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple,
+                    ),
+                    child: Text(
+                      'Gallery Menu',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.home),
+                    title: Text('Home'),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.photo_library),
+                    title: Text('Gallery'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: items.map((item) => _card(item)).toList(),
+    );
+  }
+
+  Widget _buildMobileLandscape() {
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(12),
+      children: items.map((item) {
+        return SizedBox(
+          width: 230,
+          child: _card(item),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTabletLayout(bool portrait) {
+    return GridView.builder(
+      padding: EdgeInsets.all(portrait ? 16 : 28),
+      itemCount: items.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: portrait ? 12 : 24,
+        mainAxisSpacing: portrait ? 12 : 24,
+        childAspectRatio: portrait ? 1.2 : 1.5,
+      ),
+      itemBuilder: (context, index) => _card(items[index]),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        NavigationRail(
+          selectedIndex: 0,
+          labelType: NavigationRailLabelType.all,
+          destinations: const [
+            NavigationRailDestination(
+              icon: Icon(Icons.home),
+              label: Text('Home'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.photo_library),
+              label: Text('Gallery'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.settings),
+              label: Text('Settings'),
+            ),
+          ],
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(24),
+            itemCount: items.length,
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              childAspectRatio: 1.2,
+            ),
+            itemBuilder: (context, index) =>
+                _card(items[index]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _card(GalleryItem item) {
+    return Card(
+      margin: const EdgeInsets.all(6),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: item.color.withValues(alpha: 0.10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(item.icon, size: 42, color: item.color),
+            const SizedBox(height: 12),
+            Text(
+              item.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.description,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
